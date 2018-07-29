@@ -1,4 +1,5 @@
 import psycopg2
+import settings
 
 create_table_commands = ["""CREATE TABLE customers (
                             cust_id SERIAL PRIMARY KEY,
@@ -73,7 +74,6 @@ def add_good_in_order(order_id, good_id, quantity):
     command = """INSERT INTO order_items(order_id, good_id, quantity)
                  VALUES (%s, %s, %s)
               """
-    conn = psycopg2.connect(host="localhost", database="shop_data", user="user28", password="password", port=6789)
     try:
         cur = conn.cursor()
         cur.execute(command, (order_id, good_id, quantity))
@@ -81,16 +81,12 @@ def add_good_in_order(order_id, good_id, quantity):
         conn.commit()
     except(Exception, psycopg2.DatabaseError) as error:
         print(error)
-    finally:
-        if conn is not None:
-            conn.close()
 
 
 def delete_good_from_order(order_id, good_id):
     command = """DELETE FROM order_items
                  WHERE order_id = %s AND good_id = %s
               """
-    conn = psycopg2.connect(host="localhost", database="shop_data", user="user28", password="password", port=6789)
     try:
         cur = conn.cursor()
         cur.execute(command, (order_id, good_id))
@@ -98,16 +94,12 @@ def delete_good_from_order(order_id, good_id):
         conn.commit()
     except(Exception, psycopg2.DatabaseError) as error:
         print(error)
-    finally:
-        if conn is not None:
-            conn.close()
 
 
 def change_good_quantity_in_order(order_id, good_id, quantity):
     command = """UPDATE order_items SET quantity = %s
                  WHERE order_id = %s AND good_id = %s
               """
-    conn = psycopg2.connect(host="localhost", database="shop_data", user="user28", password="password", port=6789)
     try:
         cur = conn.cursor()
         cur.execute(command, (quantity, order_id, good_id))
@@ -115,13 +107,9 @@ def change_good_quantity_in_order(order_id, good_id, quantity):
         conn.commit()
     except(Exception, psycopg2.DatabaseError) as error:
         print(error)
-    finally:
-        if conn is not None:
-            conn.close()
 
 
 def get_db_info():
-    conn = psycopg2.connect(host="localhost", database="shop_data", user="user28", password="password", port=6789)
     try:
         with open("data.csv", "w") as f:
             cur = conn.cursor()
@@ -132,12 +120,10 @@ def get_db_info():
             cur.close()
     except(Exception, psycopg2.DatabaseError) as error:
         print(error)
-    finally:
-        if conn is not None:
-            conn.close()
 
 
-conn = psycopg2.connect(host="localhost", database="shop_data", user="user28", password="password", port=6789)
+conn = psycopg2.connect(host=settings.host, database=settings.database, user=settings.user,
+                        password=settings.password, port=settings.port)
 try:
     cur = conn.cursor()
     for command in create_table_commands:
