@@ -87,15 +87,35 @@ configure arguments: --prefix=/etc/nginx --sbin-path=/usr/sbin/nginx --modules-p
 ```
 В данном случае подстрока --add-module=./nginx-module-vts означает, что nginx собран с модулем VTS.
 
+## 3. Проксирование запросов на python-приложение
+Сначала запустим два инстанса приложения former.py
+```sh
+$uwsgi --plugins=python --http-socket=0.0.0.0:8082 --wsgi-file /opt/webcode/former/process/webrunner.py --static-map /form=/opt/webcode/former/form/index.html --processes=5 --master --pidfile=/tmp/former.pid --vacuum --max-requests=5000
 
+$uwsgi --plugins=python --http-socket=0.0.0.0:8083 --wsgi-file /opt/webcode/former/process/webrunner.py --static-map /form=/opt/webcode/former/form/index.html --processes=5 --master --pidfile=/tmp/former.pid --vacuum --max-requests=5000
+```
+Для настройки проксирования запросов с nginx на данное приложение создадим новый конфигурационный файл /etc/nginx/conf.d/former.conf. В данном файле пропишем блок upstream, в котором укажем, куда нужно проксировать запросы, и блок сервер, в котором укажем настройки для приема запросов. В итоге, полученный файл будет выглядеть следующим образом:
+```sh
+upstream former {
+    server s-28.fintech-admin.m1.tinkoff.cloud:8082;
+    server s-28.fintech-admin.m1.tinkoff.cloud:8083;
+}
 
+server {
+    listen    80;
+    server_name    s-28.fintech-admin.m1.tinkoff.cloud;
 
+    client_max_body_size 50m;
 
-
-
-
-
-
-
-
-
+    location / {
+        proxy_http_version       1.1;
+        proxy_set_header         Accept-Encoding "";
+        proxy_pass               http://former;
+        proxy_set_header         Host $host;
+        proxy_set_header         X-Forwarded-For $remote_addr;
+        proxy_set_header         X_Real_IP $remote_addr;
+        proxy_set_header         X-Forwarded_Proto $scheme;
+        proxy_connect_timeout    500ms;
+    }
+}
+```
